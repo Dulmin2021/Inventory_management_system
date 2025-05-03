@@ -115,9 +115,13 @@ class InventoryManagementSystem:
         password_entry.pack(pady=(0, 25), ipady=5)
         
         # Login button
-        login_button = tk.Button(self.login_frame, text="Log In", font=("Arial", 12), bg="#f0f0f0",
+        login_button = tk.Button(self.login_frame, text="Log In", font=("Arial", 13, 'bold'), bg="#f0f0f0",
                                 command=self.login, width=15, cursor="hand2")
         login_button.pack(pady=10)
+
+        #Bind the enter key to Login
+        self.root.bind('<Return>', lambda event: self.login())
+
     
     def login(self):
         username = self.username_var.get()
@@ -171,7 +175,7 @@ class InventoryManagementSystem:
         
 
         #Log out button
-        logout_btn = tk.Button(sidebar_frame, text="📤", font=("Arial", 20), bg="#0047B3", fg="white",
+        logout_btn = tk.Button(sidebar_frame, text="📤", font=("Arial", 20, 'bold'), bg="#0047B3", fg="white",
                              relief="flat", command=self.logout, cursor="hand2")
         logout_btn.pack(pady=(30, 15), padx=10)
         logout_label = tk.Label(sidebar_frame, text="Log out", font=("Arial", 8), bg="#0047B3", fg="white")
