@@ -169,6 +169,8 @@ class InventoryManagementSystem:
         item_label = tk.Label(sidebar_frame, text="Item", font=("Arial", 8), bg="#0047B3", fg="white")
         item_label.pack()
         
+
+        #Log out button
         logout_btn = tk.Button(sidebar_frame, text="📤", font=("Arial", 20), bg="#0047B3", fg="white",
                              relief="flat", command=self.logout, cursor="hand2")
         logout_btn.pack(pady=(30, 15), padx=10)
