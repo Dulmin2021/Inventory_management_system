@@ -1,3 +1,4 @@
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
@@ -24,12 +25,19 @@ class InventoryManagementSystem:
         self.item_name_var = tk.StringVar()
         self.selling_price_var = tk.StringVar()
         
+        # Variables for dropdowns
+        self.item_code_dropdown_var = tk.StringVar()
+        self.product_code_dropdown_var = tk.StringVar()
+        self.item_name_dropdown_var = tk.StringVar()
+        self.selling_price_dropdown_var = tk.StringVar()
+        
         # Shopping cart for bill printing
         self.cart_items = []
         
         # Create frames
         self.login_frame = tk.Frame(self.root, bg="#f0f0f0")
         self.main_frame = tk.Frame(self.root, bg="#f0f0f0")
+        self.item_frame = tk.Frame(self.root, bg="#f0f0f0")
         
         # Start with login frame
         self.show_login_frame()
@@ -66,6 +74,19 @@ class InventoryManagementSystem:
             cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", 
                           ('admin', 'admin123', 'admin'))
         
+        # Insert sample items if they don't exist
+        sample_items = [
+            ('100100009', '52002', '2 FOLD BLACK', 930.0, '2025-05-04 10:34:01'),
+            ('100100010', '52003', '2FOLD PRINTED', 950.0, '2025-05-04 10:34:01'),
+            ('100100008', '52001', '2 FOLD BLACK', 930.0, '2025-05-04 10:45:50'),
+            ('100200008', '52005', '2 FOLD WHITE', 1500.0, '2025-05-04 10:49:25')
+        ]
+        
+        for item in sample_items:
+            cursor.execute("SELECT * FROM items WHERE item_code=?", (item[0],))
+            if not cursor.fetchone():
+                cursor.execute("INSERT INTO items (item_code, product_code, item_name, selling_price, date_added) VALUES (?, ?, ?, ?, ?)", item)
+        
         conn.commit()
         conn.close()
     
@@ -85,6 +106,7 @@ class InventoryManagementSystem:
     def show_login_frame(self):
         # Hide all frames
         self.main_frame.pack_forget()
+        self.item_frame.pack_forget()
         
         # Configure login frame
         self.login_frame = tk.Frame(self.root, bg="#0047B3", width=400, height=400)
@@ -119,9 +141,8 @@ class InventoryManagementSystem:
                                 command=self.login, width=15, cursor="hand2")
         login_button.pack(pady=10)
 
-        #Bind the enter key to Login
+        # Bind the enter key to Login
         self.root.bind('<Return>', lambda event: self.login())
-
     
     def login(self):
         username = self.username_var.get()
@@ -141,10 +162,11 @@ class InventoryManagementSystem:
             self.show_main_frame()
         else:
             messagebox.showerror("Error", "Invalid username or password")
-    
+
     def show_main_frame(self):
         # Hide login frame
         self.login_frame.pack_forget()
+        self.item_frame.pack_forget()
         
         # Configure main frame
         self.main_frame = tk.Frame(self.root, bg="#f0f0f0")
@@ -168,13 +190,12 @@ class InventoryManagementSystem:
         database_label.pack()
         
         item_btn = tk.Button(sidebar_frame, text="📦", font=("Arial", 20), bg="#0047B3", fg="white",
-                           relief="flat", cursor="hand2")
+                           relief="flat", command=self.show_item_frame, cursor="hand2")
         item_btn.pack(pady=(30, 15), padx=10)
         item_label = tk.Label(sidebar_frame, text="Item", font=("Arial", 8), bg="#0047B3", fg="white")
         item_label.pack()
         
-
-        #Log out button
+        # Log out button
         logout_btn = tk.Button(sidebar_frame, text="📤", font=("Arial", 20, 'bold'), bg="#0047B3", fg="white",
                              relief="flat", command=self.logout, cursor="hand2")
         logout_btn.pack(pady=(30, 15), padx=10)
@@ -273,17 +294,17 @@ class InventoryManagementSystem:
         cart_frame = tk.Frame(container, bg="#f0f0f0")
         cart_frame.pack(fill="x", padx=10, pady=(0, 10))
         
-        cart_label = tk.Label(cart_frame, text="Shopping Cart", font=("Arial", 12, "bold"), bg="#f0f0f0")
+        cart_label = tk.Label(cart_frame, text="Receipt", font=("Arial", 10, "bold"), bg="#f0f0f0")
         cart_label.pack(side="left")
         
-        self.cart_count_label = tk.Label(cart_frame, text="Items in cart: 0", font=("Arial", 10), bg="#f0f0f0")
+        self.cart_count_label = tk.Label(cart_frame, text="Items in receipt: 0", font=("Arial", 10), bg="#f0f0f0")
         self.cart_count_label.pack(side="left", padx=20)
         
-        clear_cart_btn = tk.Button(cart_frame, text="Clear Cart", bg="#FF5252", fg="white", 
+        clear_cart_btn = tk.Button(cart_frame, text="Clear Receipt", bg="#FF5252", fg="white", 
                                   command=self.clear_cart, cursor="hand2")
         clear_cart_btn.pack(side="right")
         
-        add_to_cart_btn = tk.Button(cart_frame, text="Add to Cart", bg="#5271FF", fg="white", 
+        add_to_cart_btn = tk.Button(cart_frame, text="Add to Receipt", bg="#5271FF", fg="white", 
                                    command=self.add_to_cart, cursor="hand2")
         add_to_cart_btn.pack(side="right", padx=10)
         
@@ -310,13 +331,426 @@ class InventoryManagementSystem:
                               command=self.update_item, cursor="hand2")
         update_btn.grid(row=1, column=0, pady=5, padx=5)
         
-        print_btn = tk.Button(button_frame, text="Print Bill", bg="#5271FF", fg="white", 
+        print_btn = tk.Button(button_frame, text="Print Receipt", bg="#5271FF", fg="white", 
                              width=15, height=2, font=("Arial", 10, "bold"), 
                              command=self.print_bill, cursor="hand2")
         print_btn.grid(row=1, column=1, pady=5, padx=5)
         
         # Load items
         self.load_items()
+    
+    def show_item_frame(self):
+        """Show the Item Management frame with dropdown menus"""
+        # Hide other frames
+        self.main_frame.pack_forget()
+        self.login_frame.pack_forget()
+        
+        # Configure item frame
+        self.item_frame = tk.Frame(self.root, bg="#f0f0f0")
+        self.item_frame.pack(fill="both", expand=True)
+        
+        # Left sidebar (same as main frame)
+        sidebar_frame = tk.Frame(self.item_frame, bg="#0047B3", width=70)
+        sidebar_frame.pack(side="left", fill="y")
+        
+        # Sidebar buttons
+        employee_btn = tk.Button(sidebar_frame, text="👤", font=("Arial", 20), bg="#0047B3", fg="white",
+                               relief="flat", command=self.show_main_frame, cursor="hand2")
+        employee_btn.pack(pady=(30, 15), padx=10)
+        employee_label = tk.Label(sidebar_frame, text="Employee", font=("Arial", 8), bg="#0047B3", fg="white")
+        employee_label.pack()
+        
+        database_btn = tk.Button(sidebar_frame, text="🗂️", font=("Arial", 20), bg="#0047B3", fg="white",
+                               relief="flat", cursor="hand2")
+        database_btn.pack(pady=(30, 15), padx=10)
+        database_label = tk.Label(sidebar_frame, text="Database", font=("Arial", 8), bg="#0047B3", fg="white")
+        database_label.pack()
+        
+        item_btn = tk.Button(sidebar_frame, text="📦", font=("Arial", 20), bg="#0047B3", fg="white",
+                           relief="flat", command=self.show_item_frame, cursor="hand2")
+        item_btn.pack(pady=(30, 15), padx=10)
+        item_label = tk.Label(sidebar_frame, text="Item", font=("Arial", 8), bg="#0047B3", fg="white")
+        item_label.pack()
+        
+        # Log out button
+        logout_btn = tk.Button(sidebar_frame, text="📤", font=("Arial", 20, 'bold'), bg="#0047B3", fg="white",
+                             relief="flat", command=self.logout, cursor="hand2")
+        logout_btn.pack(pady=(30, 15), padx=10)
+        logout_label = tk.Label(sidebar_frame, text="Log out", font=("Arial", 8), bg="#0047B3", fg="white")
+        logout_label.pack()
+        
+        # Main content area
+        content_frame = tk.Frame(self.item_frame, bg="#f0f0f0")
+        content_frame.pack(side="right", fill="both", expand=True, padx=20, pady=20)
+        
+        # Title
+        title_label = tk.Label(content_frame, text="CIB inventory management system - Item Management", 
+                              font=("Arial", 20, "bold"), fg="white", bg="#0047B3")
+        title_label.pack(fill="x", pady=(0, 20))
+        
+        # Database section title
+        db_title = tk.Label(content_frame, text="Item Management", font=("Arial", 14), fg="white", bg="#0047B3")
+        db_title.pack(fill="x", pady=(0, 10))
+        
+        # Content container
+        container = tk.Frame(content_frame, bg="#f0f0f0", relief="ridge", bd=1)
+        container.pack(fill="both", expand=True)
+        
+        # Dropdown selection area
+        dropdown_frame = tk.Frame(container, bg="#f0f0f0")
+        dropdown_frame.pack(fill="x", padx=10, pady=10)
+        
+        # Get unique values for dropdowns from database
+        conn = sqlite3.connect('inventory.db')
+        cursor = conn.cursor()
+        
+        # Get unique item codes
+        cursor.execute("SELECT DISTINCT item_code FROM items")
+        item_codes = [row[0] for row in cursor.fetchall()]
+        
+        # Get unique product codes
+        cursor.execute("SELECT DISTINCT product_code FROM items")
+        product_codes = [row[0] for row in cursor.fetchall()]
+        
+        # Get unique item names
+        cursor.execute("SELECT DISTINCT item_name FROM items")
+        item_names = [row[0] for row in cursor.fetchall()]
+        
+        # Get unique selling prices
+        cursor.execute("SELECT DISTINCT selling_price FROM items")
+        selling_prices = [row[0] for row in cursor.fetchall()]
+        
+        conn.close()
+        
+        # Create dropdown menus
+        tk.Label(dropdown_frame, text="Item Code:", bg="#f0f0f0").grid(row=0, column=0, padx=5, pady=5, sticky="e")
+        item_code_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.item_code_dropdown_var, 
+                                         values=item_codes, state="readonly")
+        item_code_dropdown.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        item_code_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
+        
+        tk.Label(dropdown_frame, text="Product Code:", bg="#f0f0f0").grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        product_code_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.product_code_dropdown_var, 
+                                           values=product_codes, state="readonly")
+        product_code_dropdown.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        product_code_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
+        
+        tk.Label(dropdown_frame, text="Item Name:", bg="#f0f0f0").grid(row=2, column=0, padx=5, pady=5, sticky="e")
+        item_name_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.item_name_dropdown_var, 
+                                        values=item_names, state="readonly")
+        item_name_dropdown.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+        item_name_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
+        
+        tk.Label(dropdown_frame, text="Selling Price:", bg="#f0f0f0").grid(row=3, column=0, padx=5, pady=5, sticky="e")
+        selling_price_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.selling_price_dropdown_var, 
+                                            values=selling_prices, state="readonly")
+        selling_price_dropdown.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+        selling_price_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
+        
+        # Table for item display
+        tree_frame = tk.Frame(container)
+        tree_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        columns = ("item_code", "product_code", "item_name", "selling_price", "date_added")
+        self.item_tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=10, selectmode="extended")
+        
+        # Configure columns
+        self.item_tree.heading("item_code", text="Item Code")
+        self.item_tree.heading("product_code", text="Product Code")
+        self.item_tree.heading("item_name", text="Item Name")
+        self.item_tree.heading("selling_price", text="Selling Price")
+        self.item_tree.heading("date_added", text="Date Added")
+        
+        self.item_tree.column("item_code", width=100)
+        self.item_tree.column("product_code", width=100)
+        self.item_tree.column("item_name", width=150)
+        self.item_tree.column("selling_price", width=100)
+        self.item_tree.column("date_added", width=150)
+        
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(tree_frame, orient="vertical", command=self.item_tree.yview)
+        self.item_tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+        self.item_tree.pack(fill="both", expand=True)
+        
+        # Load all items initially
+        self.load_item_tree()
+        
+        # Cart section
+        cart_frame = tk.Frame(container, bg="#f0f0f0")
+        cart_frame.pack(fill="x", padx=10, pady=(0, 10))
+        
+        cart_label = tk.Label(cart_frame, text="Receipt", font=("Arial", 10, "bold"), bg="#f0f0f0")
+        cart_label.pack(side="left")
+        
+        self.item_cart_count_label = tk.Label(cart_frame, text="Items in receipt: 0", font=("Arial", 10), bg="#f0f0f0")
+        self.item_cart_count_label.pack(side="left", padx=20)
+        
+        clear_cart_btn = tk.Button(cart_frame, text="Clear Receipt", bg="#FF5252", fg="white", 
+                                  command=self.clear_item_cart, cursor="hand2")
+        clear_cart_btn.pack(side="right")
+        
+        add_to_cart_btn = tk.Button(cart_frame, text="Add to Receipt", bg="#5271FF", fg="white", 
+                                   command=self.add_to_item_cart, cursor="hand2")
+        add_to_cart_btn.pack(side="right", padx=10)
+        
+        # Action buttons frame
+        buttons_container = tk.Frame(container, bg="#f0f0f0")
+        buttons_container.pack(fill="x", padx=10, pady=10)
+        
+        # Action buttons
+        button_frame = tk.Frame(buttons_container, bg="#f0f0f0")
+        button_frame.pack(side="right")
+        
+        print_btn = tk.Button(button_frame, text="Print Receipt", bg="#5271FF", fg="white", 
+                             width=15, height=2, font=("Arial", 10, "bold"), 
+                             command=self.print_item_bill, cursor="hand2")
+        print_btn.grid(row=0, column=0, pady=5, padx=5)
+        
+        # Search button
+        search_btn = tk.Button(dropdown_frame, text="Search", bg="#5271FF", fg="white", 
+                              command=self.search_items, cursor="hand2")
+        search_btn.grid(row=4, column=0, columnspan=2, pady=10)
+        
+        # Clear search button
+        clear_search_btn = tk.Button(dropdown_frame, text="Clear Search", bg="#FF5252", fg="white", 
+                                    command=self.clear_item_search, cursor="hand2")
+        clear_search_btn.grid(row=5, column=0, columnspan=2, pady=5)
+    
+    def on_dropdown_select(self, event):
+        """Handle selection from any dropdown menu"""
+        # Get the selected value from the dropdown that triggered the event
+        widget = event.widget
+        selected_value = widget.get()
+        
+        # Determine which dropdown was selected
+        if widget == self.item_frame.children['!frame2'].children['!combobox']:  # Item Code dropdown
+            self.product_code_dropdown_var.set("")
+            self.item_name_dropdown_var.set("")
+            self.selling_price_dropdown_var.set("")
+        elif widget == self.item_frame.children['!frame2'].children['!combobox2']:  # Product Code dropdown
+            self.item_code_dropdown_var.set("")
+            self.item_name_dropdown_var.set("")
+            self.selling_price_dropdown_var.set("")
+        elif widget == self.item_frame.children['!frame2'].children['!combobox3']:  # Item Name dropdown
+            self.item_code_dropdown_var.set("")
+            self.product_code_dropdown_var.set("")
+            self.selling_price_dropdown_var.set("")
+        elif widget == self.item_frame.children['!frame2'].children['!combobox4']:  # Selling Price dropdown
+            self.item_code_dropdown_var.set("")
+            self.product_code_dropdown_var.set("")
+            self.item_name_dropdown_var.set("")
+    
+    def search_items(self):
+        """Search items based on dropdown selections"""
+        item_code = self.item_code_dropdown_var.get()
+        product_code = self.product_code_dropdown_var.get()
+        item_name = self.item_name_dropdown_var.get()
+        selling_price = self.selling_price_dropdown_var.get()
+        
+        # Build query based on selected filters
+        query = "SELECT item_code, product_code, item_name, selling_price, date_added FROM items WHERE 1=1"
+        params = []
+        
+        if item_code:
+            query += " AND item_code=?"
+            params.append(item_code)
+        
+        if product_code:
+            query += " AND product_code=?"
+            params.append(product_code)
+        
+        if item_name:
+            query += " AND item_name=?"
+            params.append(item_name)
+        
+        if selling_price:
+            query += " AND selling_price=?"
+            params.append(float(selling_price))
+        
+        conn = sqlite3.connect('inventory.db')
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        items = cursor.fetchall()
+        conn.close()
+        
+        # Clear current items
+        for item in self.item_tree.get_children():
+            self.item_tree.delete(item)
+        
+        # Insert filtered items
+        for item in items:
+            self.item_tree.insert("", "end", values=item)
+    
+    def clear_item_search(self):
+        """Clear all dropdown selections and reload all items"""
+        self.item_code_dropdown_var.set("")
+        self.product_code_dropdown_var.set("")
+        self.item_name_dropdown_var.set("")
+        self.selling_price_dropdown_var.set("")
+        self.load_item_tree()
+    
+    def load_item_tree(self):
+        """Load all items into the item treeview"""
+        # Clear current items
+        for item in self.item_tree.get_children():
+            self.item_tree.delete(item)
+        
+        # Load from database
+        conn = sqlite3.connect('inventory.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT item_code, product_code, item_name, selling_price, date_added FROM items")
+        items = cursor.fetchall()
+        conn.close()
+        
+        # Insert into treeview
+        for item in items:
+            self.item_tree.insert("", "end", values=item)
+    
+    def add_to_item_cart(self):
+        """Add selected items to the Receipt in Item Management"""
+        selected_items = self.item_tree.selection()
+        
+        if not selected_items:
+            messagebox.showerror("Error", "No items selected")
+            return
+        
+        for item_id in selected_items:
+            item_values = self.item_tree.item(item_id, "values")
+            item_data = {
+                'item_code': item_values[0],
+                'product_code': item_values[1],
+                'item_name': item_values[2],
+                'selling_price': float(item_values[3]),
+                'quantity': 1  # Default quantity
+            }
+            
+            # Check if item already in receipt
+            existing_item = next((i for i in self.cart_items if i['item_code'] == item_data['item_code']), None)
+            if existing_item:
+                existing_item['quantity'] += 1
+            else:
+                self.cart_items.append(item_data)
+        
+        # Update cart count label
+        self.update_item_cart_count()
+        messagebox.showinfo("Success", f"{len(selected_items)} item(s) added to cart")
+    
+    def update_item_cart_count(self):
+        """Update the cart count label in Item Management"""
+        total_items = sum(item['quantity'] for item in self.cart_items)
+        self.item_cart_count_label.config(text=f"Items in receipt: {total_items}")
+    
+    def clear_item_cart(self):
+        """Clear all items from the cart in Item Management"""
+        if not self.cart_items:
+            return
+        
+        confirm = messagebox.askyesno("Clear receipt", "Are you sure you want to clear the cart?")
+        if confirm:
+            self.cart_items = []
+            self.update_item_cart_count()
+            messagebox.showinfo("Cart Cleared", "All items have been removed from the cart")
+    
+    def print_item_bill(self):
+        """Generate and print a bill for all items in the cart (Item Management)"""
+        if not self.cart_items:
+            # If cart is empty, check if items are selected in tree
+            selected_items = self.item_tree.selection()
+            if selected_items:
+                # Add selected items to cart first
+                self.add_to_item_cart()
+            else:
+                messagebox.showerror("Error", "No items in cart. Please add items to cart first.")
+                return
+        
+        # Calculate totals
+        subtotal = sum(item['selling_price'] * item['quantity'] for item in self.cart_items)
+        tax = subtotal * 0.07  # 7% tax rate
+        total = subtotal + tax
+        
+        # Generate a bill
+        bill_text = f"""
+=====================================================
+                CIB INVENTORY SYSTEM
+=====================================================
+Date: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+Bill No: BILL-{datetime.now().strftime('%Y%m%d%H%M%S')}
+
+-----------------------------------------------------
+Item Code      Item Name       Qty    Price    Total
+-----------------------------------------------------
+"""
+        
+        # Add items to bill
+        for item in self.cart_items:
+            item_total = item['selling_price'] * item['quantity']
+            bill_text += f"{item['item_code']:<15}{item['item_name']:<15}{item['quantity']:<8}${item['selling_price']:<8.2f}${item_total:<8.2f}\n"
+        
+        # Add totals
+        bill_text += f"""
+-----------------------------------------------------
+Subtotal: ${subtotal:.2f}
+Tax (7%): ${tax:.2f}
+-----------------------------------------------------
+TOTAL:    ${total:.2f}
+=====================================================
+                   Thank You!
+=====================================================
+"""
+        
+        # Get user's desktop path for saving the bill
+        try:
+            if os.name == 'nt':  # Windows
+                desktop = os.path.join(os.path.expanduser('~'), 'Desktop')
+            else:  # macOS and Linux
+                desktop = os.path.join(os.path.expanduser('~'), 'Desktop')
+                
+            # If desktop folder doesn't exist, use home directory
+            if not os.path.exists(desktop):
+                desktop = os.path.expanduser('~')
+                
+            # Create a 'Bills' folder if it doesn't exist
+            bills_folder = os.path.join(desktop, 'CIB_Bills')
+            if not os.path.exists(bills_folder):
+                os.makedirs(bills_folder)
+                
+            # Create filename with timestamp
+            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            filename = os.path.join(bills_folder, f"CIB_Bill_{timestamp}.txt")
+            
+            # Save bill to file
+            with open(filename, "w") as f:
+                f.write(bill_text)
+            
+            # Also save a copy in the application directory for reference
+            local_filename = f"bill_{timestamp}.txt"
+            with open(local_filename, "w") as f:
+                f.write(bill_text)
+            
+            messagebox.showinfo("Bill Generated", f"Bill has been saved to:\n{filename}")
+            
+            # Try to open the file with default text editor
+            try:
+                if os.name == 'nt':  # For Windows
+                    os.startfile(filename)
+                elif os.name == 'posix':  # For macOS and Linux
+                    os.system(f"open {filename}" if os.uname().sysname == "Darwin" else f"xdg-open {filename}")
+            except Exception as e:
+                messagebox.showinfo("Note", f"Bill saved but couldn't automatically open it.\nYou can find it at: {filename}")
+                
+        except Exception as e:
+            # Fallback to saving in the current directory if there's an issue
+            filename = f"bill_{datetime.now().strftime('%Y%m%d%H%M%S')}.txt"
+            with open(filename, "w") as f:
+                f.write(bill_text)
+            messagebox.showinfo("Bill Generated", f"Bill has been saved to the application folder as: {filename}")
+        
+        # Ask if user wants to clear cart after printing
+        clear_confirm = messagebox.askyesno("Clear Cart", "Bill saved successfully. Clear cart now?")
+        if clear_confirm:
+            self.cart_items = []
+            self.update_item_cart_count()
     
     def load_items(self):
         # Clear current items
@@ -368,7 +802,6 @@ class InventoryManagementSystem:
                 "INSERT INTO items (item_code, product_code, item_name, selling_price, date_added) VALUES (?, ?, ?, ?, ?)",
                 (item_code, product_code, item_name, float(selling_price), current_date)
             )
-            
             conn.commit()
             conn.close()
             
@@ -442,7 +875,6 @@ class InventoryManagementSystem:
                 "UPDATE items SET product_code=?, item_name=?, selling_price=? WHERE item_code=?",
                 (product_code, item_name, float(selling_price), item_code)
             )
-            
             conn.commit()
             conn.close()
             
@@ -458,7 +890,7 @@ class InventoryManagementSystem:
             messagebox.showerror("Database Error", f"Error: {str(e)}")
     
     def add_to_cart(self):
-        """Add selected items to the shopping cart"""
+        """Add selected items to the Receipt"""
         selected_items = self.tree.selection()
         
         if not selected_items:
@@ -475,7 +907,7 @@ class InventoryManagementSystem:
                 'quantity': 1  # Default quantity
             }
             
-            # Check if item already in cart
+            # Check if item already in receipt
             existing_item = next((i for i in self.cart_items if i['item_code'] == item_data['item_code']), None)
             if existing_item:
                 existing_item['quantity'] += 1
@@ -489,14 +921,14 @@ class InventoryManagementSystem:
     def update_cart_count(self):
         """Update the cart count label"""
         total_items = sum(item['quantity'] for item in self.cart_items)
-        self.cart_count_label.config(text=f"Items in cart: {total_items}")
+        self.cart_count_label.config(text=f"Items in receipt: {total_items}")
     
     def clear_cart(self):
         """Clear all items from the cart"""
         if not self.cart_items:
             return
         
-        confirm = messagebox.askyesno("Clear Cart", "Are you sure you want to clear the cart?")
+        confirm = messagebox.askyesno("Clear receipt", "Are you sure you want to clear the cart?")
         if confirm:
             self.cart_items = []
             self.update_cart_count()
