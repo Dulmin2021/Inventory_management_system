@@ -8,7 +8,7 @@ class InventoryManagementSystem:
     def __init__(self, root):
         self.root = root
         self.root.title("CIB Inventory Management System")
-        self.root.geometry("1000x600")
+        self.root.geometry("1080x720")
         self.root.configure(bg="#f0f0f0")
         
         # Initialize database
