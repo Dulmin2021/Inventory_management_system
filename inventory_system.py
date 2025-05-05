@@ -1,6 +1,5 @@
-
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, PhotoImage
 import sqlite3
 from datetime import datetime
 import os
@@ -11,6 +10,13 @@ class InventoryManagementSystem:
         self.root.title("CIB Inventory Management System")
         self.root.geometry("1080x720")
         self.root.configure(bg="#f0f0f0")
+
+        #Load images
+        self.employee_img = PhotoImage(file="images/employee_icon.png")
+        self.database_img = PhotoImage(file="images/database_icon.png")
+        self.item_img = PhotoImage(file="images/item_icon.png")
+        self.logout_img = PhotoImage(file="images/logout_icon.png")
+        self.login_image = PhotoImage(file="images/login_icon.png")
         
         # Initialize database
         self.create_database()
@@ -78,8 +84,6 @@ class InventoryManagementSystem:
         sample_items = [
             ('100100009', '52002', '2 FOLD BLACK', 930.0, '2025-05-04 10:34:01'),
             ('100100010', '52003', '2FOLD PRINTED', 950.0, '2025-05-04 10:34:01'),
-            ('100100008', '52001', '2 FOLD BLACK', 930.0, '2025-05-04 10:45:50'),
-            ('100200008', '52005', '2 FOLD WHITE', 1500.0, '2025-05-04 10:49:25')
         ]
         
         for item in sample_items:
@@ -108,41 +112,99 @@ class InventoryManagementSystem:
         self.main_frame.pack_forget()
         self.item_frame.pack_forget()
         
-        # Configure login frame
-        self.login_frame = tk.Frame(self.root, bg="#0047B3", width=400, height=400)
-        self.login_frame.pack(pady=50, padx=50, fill="both", expand=True)
+        # Configure login frame with gradient background
+        self.login_frame = tk.Frame(self.root, bg="#0047B3")
+        self.login_frame.pack(fill="both", expand=True)
         
-        # Title
-        title_label = tk.Label(self.login_frame, text="CIB inventory management system", 
-                              font=("Arial", 24, "bold"), fg="white", bg="#0047B3")
-        title_label.pack(pady=(50, 30))
+        # Create gradient background
+        canvas = tk.Canvas(self.login_frame, width=1080, height=720, highlightthickness=0)
+        canvas.pack(fill="both", expand=True)
         
-        # User icon
-        user_frame = tk.Frame(self.login_frame, bg="#0047B3", width=100, height=100)
-        user_frame.pack(pady=10)
-        user_icon = tk.Label(user_frame, text="👤", font=("Arial", 50), fg="white", bg="#0047B3")
-        user_icon.pack()
+        # Draw gradient from dark blue to lighter blue
+        for i in range(720):
+            r = int(0 + (100 - 0) * (i / 720))
+            g = int(71 + (150 - 71) * (i / 720))
+            b = int(179 + (255 - 179) * (i / 720))
+            color = f'#{r:02x}{g:02x}{b:02x}'
+            canvas.create_line(0, i, 1080, i, fill=color)
         
-        # Username
-        username_label = tk.Label(self.login_frame, text="Username", font=("Arial", 12), fg="white", bg="#0047B3")
-        username_label.pack(anchor="w", padx=100)
-        username_entry = tk.Entry(self.login_frame, textvariable=self.username_var, font=("Arial", 12), width=30)
-        username_entry.pack(pady=(0, 15), ipady=5)
+        # Main container for login elements
+        login_container = tk.Frame(canvas, bg="white", bd=0, relief="flat")
+        login_container.place(relx=0.5, rely=0.5, anchor="center", width=500, height=600)
         
-        # Password
-        password_label = tk.Label(self.login_frame, text="Password", font=("Arial", 12), fg="white", bg="#0047B3")
-        password_label.pack(anchor="w", padx=100)
-        password_entry = tk.Entry(self.login_frame, textvariable=self.password_var, font=("Arial", 12), 
-                                 show="*", width=30)
-        password_entry.pack(pady=(0, 25), ipady=5)
+        # Add subtle shadow effect
+        shadow = tk.Frame(login_container, bg="#e0e0e0")
+        shadow.place(x=5, y=5, relwidth=1, relheight=1, width=-5, height=-5)
         
-        # Login button
-        login_button = tk.Button(self.login_frame, text="Log In", font=("Arial", 13, 'bold'), bg="#f0f0f0",
-                                command=self.login, width=15, cursor="hand2")
-        login_button.pack(pady=10)
-
+        # Title with logo
+        logo_frame = tk.Frame(login_container, bg="white")
+        logo_frame.pack(pady=(30, 20))
+        
+        # Logo icon
+        logo_icon = tk.Label(logo_frame, image=self.login_image, font=("Arial", 40), bg="white")
+        logo_icon.pack(side="left", padx=10)
+        
+        # Title text
+        title_text = tk.Label(logo_frame, bg="white", fg="#0047B3")
+        title_text.pack(side="left")
+        
+        subtitle = tk.Label(login_container, text="CIB Inventory Management System", 
+                           font=("Arial", 12), bg="white", fg="#666")
+        subtitle.pack(pady=(0, 30))
+        
+        # Input fields container
+        input_frame = tk.Frame(login_container, bg="white")
+        input_frame.pack(pady=10, padx=30, fill="x")
+        
+        # Username field
+        username_label = tk.Label(input_frame, text="Username", 
+                                font=("Arial", 10), bg="white", fg="#555", anchor="w")
+        username_label.pack(fill="x", pady=(5, 0))
+        
+        username_entry = tk.Entry(input_frame, textvariable=self.username_var, 
+                                font=("Arial", 12), bd=1, relief="solid",
+                                highlightthickness=1, highlightcolor="#0047B3",
+                                highlightbackground="#ddd")
+        username_entry.pack(fill="x", pady=5, ipady=8)
+        
+        # Password field
+        password_label = tk.Label(input_frame, text="Password", 
+                                font=("Arial", 10), bg="white", fg="#555", anchor="w")
+        password_label.pack(fill="x", pady=(15, 0))
+        
+        password_entry = tk.Entry(input_frame, textvariable=self.password_var, 
+                                font=("Arial", 12), show="*", 
+                                bd=1, relief="solid",
+                                highlightthickness=1, highlightcolor="#0047B3",
+                                highlightbackground="#ddd")
+        password_entry.pack(fill="x", pady=5, ipady=8)
+        
+        # Login button with hover effect
+        def on_enter(e):
+            login_button['background'] = '#003399'
+        
+        def on_leave(e):
+            login_button['background'] = '#0047B3'
+        
+        login_button = tk.Button(login_container, text="LOG IN", 
+                               font=("Arial", 12, 'bold'), bg="#0047B3", fg="white",
+                               command=self.login, bd=0, cursor="hand2",
+                               activebackground="#003399", activeforeground="white",
+                               padx=20, pady=10)
+        login_button.pack(pady=30, ipadx=30)
+        login_button.bind("<Enter>", on_enter)
+        login_button.bind("<Leave>", on_leave)
+        
+        # Footer
+        footer = tk.Label(login_container, text="© 2024 CIB Inventory System", 
+                         font=("Arial", 8), bg="white", fg="#999")
+        footer.pack(side="bottom", pady=10)
+        
         # Bind the enter key to Login
         self.root.bind('<Return>', lambda event: self.login())
+        
+        # Set focus to username field
+        username_entry.focus_set()
     
     def login(self):
         username = self.username_var.get()
@@ -164,9 +226,10 @@ class InventoryManagementSystem:
             messagebox.showerror("Error", "Invalid username or password")
 
     def show_main_frame(self):
+        """Rest of your existing code remains exactly the same"""
         # Hide login frame
         self.login_frame.pack_forget()
-        self.item_frame.pack_forget()
+        self.item_frame.pack_forget() #hide the item frame
         
         # Configure main frame
         self.main_frame = tk.Frame(self.root, bg="#f0f0f0")
@@ -177,29 +240,29 @@ class InventoryManagementSystem:
         sidebar_frame.pack(side="left", fill="y")
         
         # Sidebar buttons
-        employee_btn = tk.Button(sidebar_frame, text="👤", font=("Arial", 20), bg="#0047B3", fg="white",
+        employee_btn = tk.Button(sidebar_frame, image=self.employee_img, bg="#0047B3",
                                relief="flat", command=self.show_main_frame, cursor="hand2")
-        employee_btn.pack(pady=(30, 15), padx=10)
-        employee_label = tk.Label(sidebar_frame, text="Employee", font=("Arial", 8), bg="#0047B3", fg="white")
+        employee_btn.pack(pady=(20, 10), padx=10)
+        employee_label = tk.Label(sidebar_frame, text="Employee", font=("Arial", 10), bg="#0047B3", fg="white")
         employee_label.pack()
         
-        database_btn = tk.Button(sidebar_frame, text="🗂️", font=("Arial", 20), bg="#0047B3", fg="white",
+        database_btn = tk.Button(sidebar_frame, image=self.database_img, bg="#0047B3",
                                relief="flat", cursor="hand2")
-        database_btn.pack(pady=(30, 15), padx=10)
-        database_label = tk.Label(sidebar_frame, text="Database", font=("Arial", 8), bg="#0047B3", fg="white")
+        database_btn.pack(pady=(20, 10), padx=10)
+        database_label = tk.Label(sidebar_frame, text="Database", font=("Arial", 10), bg="#0047B3", fg="white")
         database_label.pack()
         
-        item_btn = tk.Button(sidebar_frame, text="📦", font=("Arial", 20), bg="#0047B3", fg="white",
+        item_btn = tk.Button(sidebar_frame, image=self.item_img, bg="#0047B3",
                            relief="flat", command=self.show_item_frame, cursor="hand2")
         item_btn.pack(pady=(30, 15), padx=10)
-        item_label = tk.Label(sidebar_frame, text="Item", font=("Arial", 8), bg="#0047B3", fg="white")
+        item_label = tk.Label(sidebar_frame, text="Item", font=("Arial", 10), bg="#0047B3", fg="white")
         item_label.pack()
         
         # Log out button
-        logout_btn = tk.Button(sidebar_frame, text="📤", font=("Arial", 20, 'bold'), bg="#0047B3", fg="white",
+        logout_btn = tk.Button(sidebar_frame, image=self.logout_img, bg="#0047B3",
                              relief="flat", command=self.logout, cursor="hand2")
         logout_btn.pack(pady=(30, 15), padx=10)
-        logout_label = tk.Label(sidebar_frame, text="Log out", font=("Arial", 8), bg="#0047B3", fg="white")
+        logout_label = tk.Label(sidebar_frame, text="Log out", font=("Arial", 10), bg="#0047B3", fg="white")
         logout_label.pack()
         
         # Main content area
@@ -354,26 +417,23 @@ class InventoryManagementSystem:
         sidebar_frame.pack(side="left", fill="y")
         
         # Sidebar buttons
-        employee_btn = tk.Button(sidebar_frame, text="👤", font=("Arial", 20), bg="#0047B3", fg="white",
-                               relief="flat", command=self.show_main_frame, cursor="hand2")
+        employee_btn = tk.Button(sidebar_frame, image=self.employee_img, text="Employees", font=("Arial", 20), bg="#0047B3", fg="white", relief="flat", command=self.show_main_frame, cursor="hand2")
         employee_btn.pack(pady=(30, 15), padx=10)
         employee_label = tk.Label(sidebar_frame, text="Employee", font=("Arial", 8), bg="#0047B3", fg="white")
         employee_label.pack()
         
-        database_btn = tk.Button(sidebar_frame, text="🗂️", font=("Arial", 20), bg="#0047B3", fg="white",
-                               relief="flat", cursor="hand2")
+        database_btn = tk.Button(sidebar_frame, image=self.database_img, font=("Arial", 20), bg="#0047B3", fg="white", relief="flat", command=self.show_main_frame, cursor="hand2")
         database_btn.pack(pady=(30, 15), padx=10)
         database_label = tk.Label(sidebar_frame, text="Database", font=("Arial", 8), bg="#0047B3", fg="white")
         database_label.pack()
         
-        item_btn = tk.Button(sidebar_frame, text="📦", font=("Arial", 20), bg="#0047B3", fg="white",
-                           relief="flat", command=self.show_item_frame, cursor="hand2")
+        item_btn = tk.Button(sidebar_frame, image=self.item_img, font=("Arial", 20), bg="#0047B3", fg="white", relief="flat", command=self.show_item_frame, cursor="hand2")
         item_btn.pack(pady=(30, 15), padx=10)
         item_label = tk.Label(sidebar_frame, text="Item", font=("Arial", 8), bg="#0047B3", fg="white")
         item_label.pack()
         
         # Log out button
-        logout_btn = tk.Button(sidebar_frame, text="📤", font=("Arial", 20, 'bold'), bg="#0047B3", fg="white",
+        logout_btn = tk.Button(sidebar_frame, image=self.logout_img, font=("Arial", 20, 'bold'), bg="#0047B3", fg="white",
                              relief="flat", command=self.logout, cursor="hand2")
         logout_btn.pack(pady=(30, 15), padx=10)
         logout_label = tk.Label(sidebar_frame, text="Log out", font=("Arial", 8), bg="#0047B3", fg="white")
@@ -690,10 +750,10 @@ Item Code      Item Name       Qty    Price    Total
         # Add totals
         bill_text += f"""
 -----------------------------------------------------
-Subtotal: ${subtotal:.2f}
-Tax (7%): ${tax:.2f}
+Subtotal: Rs:{subtotal:.2f}
+Tax (7%): Rs:{tax:.2f}
 -----------------------------------------------------
-TOTAL:    ${total:.2f}
+TOTAL:    Rs:{total:.2f}
 =====================================================
                    Thank You!
 =====================================================
@@ -967,15 +1027,15 @@ Item Code      Item Name       Qty    Price    Total
         # Add items to bill
         for item in self.cart_items:
             item_total = item['selling_price'] * item['quantity']
-            bill_text += f"{item['item_code']:<15}{item['item_name']:<15}{item['quantity']:<8}${item['selling_price']:<8.2f}${item_total:<8.2f}\n"
+            bill_text += f"{item['item_code']:<15}{item['item_name']:<15}{item['quantity']:<8}Rs:{item['selling_price']:<8.2f}Rs:{item_total:<8.2f}\n"
         
         # Add totals
         bill_text += f"""
 -----------------------------------------------------
-Subtotal: ${subtotal:.2f}
-Tax (7%): ${tax:.2f}
+Subtotal: Rs:{subtotal:.2f}
+Tax (0%): Rs:{tax:.2f}
 -----------------------------------------------------
-TOTAL:    ${total:.2f}
+TOTAL:    Rs:{total:.2f}
 =====================================================
                    Thank You!
 =====================================================
@@ -1045,7 +1105,7 @@ TOTAL:    ${total:.2f}
         
         if len(selected_items) == 1:
             item_values = self.tree.item(selected_items[0], "values")
-            
+        if len(item_values) >= 4:  # Ensure all required values are present    
             self.item_code_var.set(item_values[0])
             self.product_code_var.set(item_values[1])
             self.item_name_var.set(item_values[2])
