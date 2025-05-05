@@ -11,12 +11,15 @@ class InventoryManagementSystem:
         self.root.geometry("1080x720")
         self.root.configure(bg="#f0f0f0")
 
+# Get the directory of the executable or script
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+
         #Load images
-        self.employee_img = PhotoImage(file="images/employee_icon.png")
-        self.database_img = PhotoImage(file="images/database_icon.png")
-        self.item_img = PhotoImage(file="images/item_icon.png")
-        self.logout_img = PhotoImage(file="images/logout_icon.png")
-        self.login_image = PhotoImage(file="images/login_icon.png")
+        self.employee_img = PhotoImage(file=os.path.join(base_dir, "images", "employee_icon.png"))
+        self.database_img = PhotoImage(file=os.path.join(base_dir, "images", "database_icon.png"))
+        self.item_img = PhotoImage(file=os.path.join(base_dir, "images", "item_icon.png"))
+        self.logout_img = PhotoImage(file=os.path.join(base_dir, "images", "logout_icon.png"))
+        self.login_image = PhotoImage(file=os.path.join(base_dir, "images", "login_icon.png"))
         
         # Initialize database
         self.create_database()
