@@ -15,11 +15,19 @@ class InventoryManagementSystem:
         base_dir = os.path.dirname(os.path.abspath(__file__))
 
         # Load images
-        self.employee_img = PhotoImage(file=os.path.join(base_dir, "images", "employee_icon.png"))
-        self.database_img = PhotoImage(file=os.path.join(base_dir, "images", "database_icon.png"))
-        self.item_img = PhotoImage(file=os.path.join(base_dir, "images", "item_icon.png"))
-        self.logout_img = PhotoImage(file=os.path.join(base_dir, "images", "logout_icon.png"))
-        self.login_image = PhotoImage(file=os.path.join(base_dir, "images", "login_icon.png"))
+        try:
+            self.employee_img = PhotoImage(file=os.path.join(base_dir, "images", "employee_icon.png"))
+            self.database_img = PhotoImage(file=os.path.join(base_dir, "images", "database_icon.png"))
+            self.item_img = PhotoImage(file=os.path.join(base_dir, "images", "item_icon.png"))
+            self.logout_img = PhotoImage(file=os.path.join(base_dir, "images", "logout_icon.png"))
+            self.login_image = PhotoImage(file=os.path.join(base_dir, "images", "login_icon.png"))
+        except:
+            # Create blank images if actual images aren't found
+            self.employee_img = PhotoImage(width=48, height=48)
+            self.database_img = PhotoImage(width=48, height=48)
+            self.item_img = PhotoImage(width=48, height=48)
+            self.logout_img = PhotoImage(width=48, height=48)
+            self.login_image = PhotoImage(width=48, height=48)
         
         # Initialize database
         self.create_database()
@@ -40,6 +48,69 @@ class InventoryManagementSystem:
         self.item_name_dropdown_var = tk.StringVar()
         self.selling_price_dropdown_var = tk.StringVar()
         
+        # Variable for category selection
+        self.selected_category = tk.StringVar()
+        
+        # Define categories and their items
+        self.categories = {
+            "LADIES 2FOLD": [
+                "2 FOLD BLACK", "2 FOLD SATIN", "2 FOLD BLACK UV",
+                "2 FOLD PLAIN COLOUR WITH PRINT", "2 FOLD PLAIN BORDER DESIGN",
+                "2 FOLD PRINTED UV", "2 FOLD PRINTED FRIELD UMBRELLA",
+                "2 FOLD BLACK HALF MOON"
+            ],
+            "LADIES 3 FOLD": [
+                "3 FOLD BLACK", "3 FOLD PRINTED", "3 FOLD SATIN",
+                "3 FOLD BLACK UV", "3 FOLD PLAIN COLOUR WITH PRINT",
+                "3 FOLD PLAIN BORDER DESIGN", "3 FOLD UV PRINTED",
+                "3 FOLD PRINTED FRIELD UMBRELLA", "3 FOLD BLACK HALF MOON"
+            ],
+            "24\" GENTS": [
+                "24*16 GOLD METAL FRAME MANUAL OPEN BLACK",
+                "24*16 GOLD METAL FRAME MANUAL OPEN MULTI",
+                "24*16 GOLD METAL FRAME MANUAL OPEN SILVER",
+                "24*16 MANUAL OPEN TELESCOPE (MULTI)"
+            ],
+            "27\" GENTS": [
+                "27*16 GOLD METAL FRAME MANUAL OPEN BLACK",
+                "27*16 GOLD METAL FRAME MANUAL OPEN MULTI",
+                "27*16 GOLD METAL FRAME MANUAL OPEN UV",
+                "27*16 MANUAL OPEN TELESCOPE (MULTI)",
+                "27*16 METAL FRAME MULTI-SIXTY PANNEL"
+            ],
+            "30\" GENTS": [
+                "30*16 GOLD METAL FRAME MANUAL OPEN PLAIN",
+                "30*16 GOLD METAL FRAME MANUAL OPEN MULTI",
+                "30*16 GOLD METAL FRAME MANUAL OPEN UV",
+                "30*16 METAL FRAME MULTI-SIXTY PANNEL"
+            ],
+            "MUTHU UMBRELLA": [
+                "NORMAL MUTHU UMBRELLA WHITE", "NORMAL MUTHU UMBRELLA YELLOW",
+                "NORMAL FRILED WITH RIB COVER WHITE", "NORMAL FRILED WITH RIB COVER YELLOW",
+                "SEAQUEENS FRILED WITH RIB COVER WHITE", "SEAQUEENS FRILED WITH RIB COVER YELLOW",
+                "DESIGN FRILED WITH RIB COVER YELLOW", "DESIGN FRILED WITH RIB COVER WHITE",
+                "NORMAL MUTHU UMBRELLA WHITE SIXTY PANNEL", "NORMAL MUTHU UMBRELLA YELLOW SIXTY PANNEL"
+            ],
+            "CAR UMBRELLA": ["CAR UMBRELLA"],
+            "GARDEN UMBRELLA": [
+                "36*8 GARDEN UMBRELLA", "44*16 GARDEN UMBRELLA",
+                "44*16 GARDEN UMBRELLA SIXTY PANNEL"
+            ],
+            "BABY UMBRELLA": [
+                "BABY PLAIN", "BABY PRINTED", "BABY TELESCOPE UMBRELLA"
+            ],
+            "PIRIKARA UMBRELLA": [
+                "2 FOLD (BLACK)", "2 FOLD (BROWN)", "2 FOLD (ORANGE)",
+                "2 FOLD (YELLOW)", "2 FOLD (MEROON)", "24*16 MANUAL PIRIKARA (BLACK)",
+                "24*16 MANUAL PIRIKARA (BROWN)", "24*16 MANUAL PIRIKARA (ORANGE)",
+                "24*16 MANUAL PIRIKARA (MEROON)", "24*16 MANUAL PIRIKARA (YELLOW)"
+            ],
+            "MOSQUITO NETS": [
+                "SR-NORMAL NETS SMALL", "SR-NORMAL NETS MEDIUM",
+                "SR-NORMAL NETS LARGE", "SR-NORMAL NETS EXTRA LARGE"
+            ]
+        }
+
         # Shopping cart for bill printing
         self.cart_items = []
         
@@ -384,7 +455,7 @@ class InventoryManagementSystem:
         self.load_items()
     
     def show_item_frame(self):
-        """Show the Item Management frame with dropdown menus"""
+        """Show the Item Management frame with dropdown menus and category radio buttons"""
         # Hide other frames
         self.main_frame.pack_forget()
         self.login_frame.pack_forget()
@@ -413,56 +484,74 @@ class InventoryManagementSystem:
         container = tk.Frame(content_frame, bg="#f0f0f0", relief="ridge", bd=1)
         container.pack(fill="both", expand=True)
         
+        # Category selection frame (radio buttons)
+        category_frame = tk.Frame(container, bg="#f0f0f0")
+        category_frame.pack(fill="x", padx=10, pady=10)
+        
+        tk.Label(category_frame, text="Categories:", bg="#f0f0f0").pack(anchor="w")
+        
+        # Create a frame for radio buttons with scrollbar
+        radio_container = tk.Frame(category_frame, bg="#f0f0f0")
+        radio_container.pack(fill="x", expand=True)
+        
+        # Add scrollbar for categories
+        canvas = tk.Canvas(radio_container, bg="#f0f0f0", height=100)
+        scrollbar = ttk.Scrollbar(radio_container, orient="horizontal", command=canvas.xview)
+        scrollable_frame = tk.Frame(canvas, bg="#f0f0f0")
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(xscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="top", fill="x", expand=True)
+        scrollbar.pack(side="bottom", fill="x")
+        
+        # Create radio buttons for each category
+        for i, category in enumerate(self.categories.keys()):
+            rb = tk.Radiobutton(
+                scrollable_frame,
+                text=category,
+                variable=self.selected_category,
+                value=category,
+                command=self.update_item_dropdowns,
+                bg="#f0f0f0"
+            )
+            rb.grid(row=0, column=i, padx=5, pady=5, sticky="w")
+        
         # Dropdown selection area
         dropdown_frame = tk.Frame(container, bg="#f0f0f0")
         dropdown_frame.pack(fill="x", padx=10, pady=10)
         
-        # Get unique values for dropdowns from database
-        conn = sqlite3.connect('inventory.db')
-        cursor = conn.cursor()
-        
-        # Get unique item codes
-        cursor.execute("SELECT DISTINCT item_code FROM items")
-        item_codes = [row[0] for row in cursor.fetchall()]
-        
-        # Get unique product codes
-        cursor.execute("SELECT DISTINCT product_code FROM items")
-        product_codes = [row[0] for row in cursor.fetchall()]
-        
-        # Get unique item names
-        cursor.execute("SELECT DISTINCT item_name FROM items")
-        item_names = [row[0] for row in cursor.fetchall()]
-        
-        # Get unique selling prices
-        cursor.execute("SELECT DISTINCT selling_price FROM items")
-        selling_prices = [row[0] for row in cursor.fetchall()]
-        
-        conn.close()
-        
         # Create dropdown menus
         tk.Label(dropdown_frame, text="Item Code:", bg="#f0f0f0").grid(row=0, column=0, padx=5, pady=5, sticky="e")
-        item_code_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.item_code_dropdown_var, 
-                                         values=item_codes, state="readonly")
-        item_code_dropdown.grid(row=0, column=1, padx=5, pady=5, sticky="w")
-        item_code_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
+        self.item_code_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.item_code_dropdown_var, 
+                                             state="readonly")
+        self.item_code_dropdown.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        self.item_code_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
         
         tk.Label(dropdown_frame, text="Product Code:", bg="#f0f0f0").grid(row=1, column=0, padx=5, pady=5, sticky="e")
-        product_code_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.product_code_dropdown_var, 
-                                           values=product_codes, state="readonly")
-        product_code_dropdown.grid(row=1, column=1, padx=5, pady=5, sticky="w")
-        product_code_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
+        self.product_code_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.product_code_dropdown_var, 
+                                               state="readonly")
+        self.product_code_dropdown.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        self.product_code_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
         
         tk.Label(dropdown_frame, text="Item Name:", bg="#f0f0f0").grid(row=2, column=0, padx=5, pady=5, sticky="e")
-        item_name_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.item_name_dropdown_var, 
-                                        values=item_names, state="readonly")
-        item_name_dropdown.grid(row=2, column=1, padx=5, pady=5, sticky="w")
-        item_name_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
+        self.item_name_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.item_name_dropdown_var, 
+                                            state="readonly")
+        self.item_name_dropdown.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+        self.item_name_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
         
         tk.Label(dropdown_frame, text="Selling Price:", bg="#f0f0f0").grid(row=3, column=0, padx=5, pady=5, sticky="e")
-        selling_price_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.selling_price_dropdown_var, 
-                                            values=selling_prices, state="readonly")
-        selling_price_dropdown.grid(row=3, column=1, padx=5, pady=5, sticky="w")
-        selling_price_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
+        self.selling_price_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.selling_price_dropdown_var, 
+                                                state="readonly")
+        self.selling_price_dropdown.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+        self.selling_price_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
         
         # Table for item display
         tree_frame = tk.Frame(container)
@@ -565,6 +654,75 @@ class InventoryManagementSystem:
         logout_label = tk.Label(sidebar_frame, text="Log out", font=("Arial", 10), bg="#0047B3", fg="white")
         logout_label.pack()
     
+    def update_item_dropdowns(self):
+        """Update dropdown values based on selected category"""
+        category = self.selected_category.get()
+        if not category:
+            return
+            
+        # Get items for the selected category
+        category_items = self.categories.get(category, [])
+        
+        # Connect to database to get item details
+        conn = sqlite3.connect('inventory.db')
+        cursor = conn.cursor()
+        
+        # Get items that match the category's item names
+        item_codes = []
+        product_codes = []
+        item_names = []
+        selling_prices = []
+        
+        for item_name in category_items:
+            cursor.execute("SELECT item_code, product_code, item_name, selling_price FROM items WHERE item_name=?", (item_name,))
+            result = cursor.fetchone()
+            if result:
+                item_codes.append(result[0])
+                product_codes.append(result[1])
+                item_names.append(result[2])
+                selling_prices.append(str(result[3]))
+        
+        conn.close()
+        
+        # Update dropdown values
+        self.item_code_dropdown['values'] = item_codes
+        self.product_code_dropdown['values'] = product_codes
+        self.item_name_dropdown['values'] = item_names
+        self.selling_price_dropdown['values'] = selling_prices
+        
+        # Clear current selections
+        self.item_code_dropdown_var.set("")
+        self.product_code_dropdown_var.set("")
+        self.item_name_dropdown_var.set("")
+        self.selling_price_dropdown_var.set("")
+        
+        # Update the item tree with items from this category
+        self.update_item_tree_with_category(category_items)
+
+    def update_item_tree_with_category(self, category_items):
+        """Update the item treeview with items from the specified category"""
+        # Clear current items
+        for item in self.item_tree.get_children():
+            self.item_tree.delete(item)
+        
+        if not category_items:
+            return
+            
+        # Connect to database
+        conn = sqlite3.connect('inventory.db')
+        cursor = conn.cursor()
+        
+        # Build query to get all items that match the category's item names
+        query = "SELECT item_code, product_code, item_name, selling_price, date_added FROM items WHERE item_name IN ({})".format(
+            ','.join(['?'] * len(category_items)))
+        cursor.execute(query, category_items)
+        items = cursor.fetchall()
+        conn.close()
+        
+        # Insert into treeview
+        for item in items:
+            self.item_tree.insert("", "end", values=item)
+    
     def on_dropdown_select(self, event):
         """Handle selection from any dropdown menu"""
         # Get the selected value from the dropdown that triggered the event
@@ -572,19 +730,19 @@ class InventoryManagementSystem:
         selected_value = widget.get()
         
         # Determine which dropdown was selected
-        if widget == self.item_frame.children['!frame2'].children['!combobox']:  # Item Code dropdown
+        if widget == self.item_code_dropdown:  # Item Code dropdown
             self.product_code_dropdown_var.set("")
             self.item_name_dropdown_var.set("")
             self.selling_price_dropdown_var.set("")
-        elif widget == self.item_frame.children['!frame2'].children['!combobox2']:  # Product Code dropdown
+        elif widget == self.product_code_dropdown:  # Product Code dropdown
             self.item_code_dropdown_var.set("")
             self.item_name_dropdown_var.set("")
             self.selling_price_dropdown_var.set("")
-        elif widget == self.item_frame.children['!frame2'].children['!combobox3']:  # Item Name dropdown
+        elif widget == self.item_name_dropdown:  # Item Name dropdown
             self.item_code_dropdown_var.set("")
             self.product_code_dropdown_var.set("")
             self.selling_price_dropdown_var.set("")
-        elif widget == self.item_frame.children['!frame2'].children['!combobox4']:  # Selling Price dropdown
+        elif widget == self.selling_price_dropdown:  # Selling Price dropdown
             self.item_code_dropdown_var.set("")
             self.product_code_dropdown_var.set("")
             self.item_name_dropdown_var.set("")
@@ -636,6 +794,7 @@ class InventoryManagementSystem:
         self.product_code_dropdown_var.set("")
         self.item_name_dropdown_var.set("")
         self.selling_price_dropdown_var.set("")
+        self.selected_category.set("")
         self.load_item_tree()
     
     def load_item_tree(self):
