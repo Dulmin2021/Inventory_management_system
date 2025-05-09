@@ -484,78 +484,81 @@ class InventoryManagementSystem:
         container = tk.Frame(content_frame, bg="#f0f0f0", relief="ridge", bd=1)
         container.pack(fill="both", expand=True)
         
+        # Create a frame for the left side (categories and dropdowns) and right side (treeview)
+        main_content_frame = tk.Frame(container, bg="#f0f0f0")
+        main_content_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Left side frame for categories and dropdowns
+        left_frame = tk.Frame(main_content_frame, bg="#f0f0f0")
+        left_frame.pack(side="left", fill="y", padx=5, pady=5)
+        
         # Category selection frame (radio buttons)
-        category_frame = tk.Frame(container, bg="#f0f0f0")
-        category_frame.pack(fill="x", padx=10, pady=10)
+        category_frame = tk.LabelFrame(left_frame, text="Categories", bg="#f0f0f0", font=("Arial", 10, "bold"))
+        category_frame.pack(fill="x", padx=5, pady=5)
         
-        tk.Label(category_frame, text="Categories:", bg="#f0f0f0").pack(anchor="w")
+        # Create a vertical frame for radio buttons
+        radio_frame = tk.Frame(category_frame, bg="#f0f0f0")
+        radio_frame.pack(fill="both", expand=True)
         
-        # Create a frame for radio buttons with scrollbar
-        radio_container = tk.Frame(category_frame, bg="#f0f0f0")
-        radio_container.pack(fill="x", expand=True)
-        
-        # Add scrollbar for categories
-        canvas = tk.Canvas(radio_container, bg="#f0f0f0", height=100)
-        scrollbar = ttk.Scrollbar(radio_container, orient="horizontal", command=canvas.xview)
-        scrollable_frame = tk.Frame(canvas, bg="#f0f0f0")
-        
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(
-                scrollregion=canvas.bbox("all")
-            )
-        )
-        
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(xscrollcommand=scrollbar.set)
-        
-        canvas.pack(side="top", fill="x", expand=True)
-        scrollbar.pack(side="bottom", fill="x")
-        
-        # Create radio buttons for each category
-        for i, category in enumerate(self.categories.keys()):
+        # Create radio buttons for each category in a vertical layout
+        for category in self.categories.keys():
             rb = tk.Radiobutton(
-                scrollable_frame,
+                radio_frame,
                 text=category,
                 variable=self.selected_category,
                 value=category,
                 command=self.update_item_dropdowns,
-                bg="#f0f0f0"
+                bg="#f0f0f0",
+                anchor="w",
+                width=20  # Set a fixed width for alignment
             )
-            rb.grid(row=0, column=i, padx=5, pady=5, sticky="w")
+            rb.pack(anchor="w", padx=5, pady=2)
         
         # Dropdown selection area
-        dropdown_frame = tk.Frame(container, bg="#f0f0f0")
-        dropdown_frame.pack(fill="x", padx=10, pady=10)
+        dropdown_frame = tk.LabelFrame(left_frame, text="Database", bg="#f0f0f0", font=("Arial", 10, "bold"))
+        dropdown_frame.pack(fill="x", padx=5, pady=5)
         
-        # Create dropdown menus
+        # Create dropdown menus with labels
         tk.Label(dropdown_frame, text="Item Code:", bg="#f0f0f0").grid(row=0, column=0, padx=5, pady=5, sticky="e")
         self.item_code_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.item_code_dropdown_var, 
-                                             state="readonly")
+                                             state="readonly", width=20)
         self.item_code_dropdown.grid(row=0, column=1, padx=5, pady=5, sticky="w")
         self.item_code_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
         
         tk.Label(dropdown_frame, text="Product Code:", bg="#f0f0f0").grid(row=1, column=0, padx=5, pady=5, sticky="e")
         self.product_code_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.product_code_dropdown_var, 
-                                               state="readonly")
+                                               state="readonly", width=20)
         self.product_code_dropdown.grid(row=1, column=1, padx=5, pady=5, sticky="w")
         self.product_code_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
         
         tk.Label(dropdown_frame, text="Item Name:", bg="#f0f0f0").grid(row=2, column=0, padx=5, pady=5, sticky="e")
         self.item_name_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.item_name_dropdown_var, 
-                                            state="readonly")
+                                            state="readonly", width=20)
         self.item_name_dropdown.grid(row=2, column=1, padx=5, pady=5, sticky="w")
         self.item_name_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
         
         tk.Label(dropdown_frame, text="Selling Price:", bg="#f0f0f0").grid(row=3, column=0, padx=5, pady=5, sticky="e")
         self.selling_price_dropdown = ttk.Combobox(dropdown_frame, textvariable=self.selling_price_dropdown_var, 
-                                                state="readonly")
+                                                state="readonly", width=20)
         self.selling_price_dropdown.grid(row=3, column=1, padx=5, pady=5, sticky="w")
         self.selling_price_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_select)
         
+        # Search and Clear buttons
+        search_btn = tk.Button(dropdown_frame, text="Search", bg="#5271FF", fg="white", 
+                              command=self.search_items, cursor="hand2", width=10)
+        search_btn.grid(row=4, column=0, padx=5, pady=10, sticky="e")
+        
+        clear_search_btn = tk.Button(dropdown_frame, text="Clear Search", bg="#FF5252", fg="white", 
+                                    command=self.clear_item_search, cursor="hand2", width=10)
+        clear_search_btn.grid(row=4, column=1, padx=5, pady=10, sticky="w")
+        
+        # Right side frame for the treeview
+        right_frame = tk.Frame(main_content_frame, bg="#f0f0f0")
+        right_frame.pack(side="right", fill="both", expand=True, padx=5, pady=5)
+        
         # Table for item display
-        tree_frame = tk.Frame(container)
-        tree_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        tree_frame = tk.Frame(right_frame)
+        tree_frame.pack(fill="both", expand=True)
         
         columns = ("item_code", "product_code", "item_name", "selling_price", "date_added")
         self.item_tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=10, selectmode="extended")
@@ -579,12 +582,9 @@ class InventoryManagementSystem:
         scrollbar.pack(side="right", fill="y")
         self.item_tree.pack(fill="both", expand=True)
         
-        # Load all items initially
-        self.load_item_tree()
-        
         # Cart section
-        cart_frame = tk.Frame(container, bg="#f0f0f0")
-        cart_frame.pack(fill="x", padx=10, pady=(0, 10))
+        cart_frame = tk.Frame(right_frame, bg="#f0f0f0")
+        cart_frame.pack(fill="x", pady=(10, 0))
         
         cart_label = tk.Label(cart_frame, text="Receipt", font=("Arial", 10, "bold"), bg="#f0f0f0")
         cart_label.pack(side="left")
@@ -600,28 +600,14 @@ class InventoryManagementSystem:
                                    command=self.add_to_cart, cursor="hand2")
         add_to_cart_btn.pack(side="right", padx=10)
         
-        # Action buttons frame
-        buttons_container = tk.Frame(container, bg="#f0f0f0")
-        buttons_container.pack(fill="x", padx=10, pady=10)
-        
-        # Action buttons
-        button_frame = tk.Frame(buttons_container, bg="#f0f0f0")
-        button_frame.pack(side="right")
-        
-        print_btn = tk.Button(button_frame, text="Print Receipt", bg="#5271FF", fg="white", 
+        # Print button
+        print_btn = tk.Button(right_frame, text="Print Receipt", bg="#5271FF", fg="white", 
                              width=15, height=2, font=("Arial", 10, "bold"), 
                              command=self.print_bill, cursor="hand2")
-        print_btn.grid(row=0, column=0, pady=5, padx=5)
+        print_btn.pack(pady=10)
         
-        # Search button
-        search_btn = tk.Button(dropdown_frame, text="Search", bg="#5271FF", fg="white", 
-                              command=self.search_items, cursor="hand2")
-        search_btn.grid(row=4, column=0, columnspan=2, pady=10)
-        
-        # Clear search button
-        clear_search_btn = tk.Button(dropdown_frame, text="Clear Search", bg="#FF5252", fg="white", 
-                                    command=self.clear_item_search, cursor="hand2")
-        clear_search_btn.grid(row=5, column=0, columnspan=2, pady=5)
+        # Load all items initially
+        self.load_item_tree()
     
     def create_sidebar(self, parent_frame):
         """Create the sidebar with navigation buttons"""
