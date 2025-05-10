@@ -140,8 +140,8 @@ class InventoryManagementSystem:
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            item_code TEXT UNIQUE NOT NULL,
-            product_code TEXT NOT NULL,
+            item_code TEXT NOT NULL,
+            product_code TEXT UNIQUE NOT NULL,
             item_name TEXT NOT NULL,
             selling_price REAL NOT NULL,
             date_added TEXT NOT NULL
@@ -998,9 +998,9 @@ TOTAL:    Rs:{total:.2f}
             cursor = conn.cursor()
             
             # Check if item code already exists
-            cursor.execute("SELECT * FROM items WHERE item_code=?", (item_code,))
+            cursor.execute("SELECT * FROM items WHERE product_code=?", (product_code,))
             if cursor.fetchone():
-                messagebox.showerror("Error", "Item code already exists")
+                messagebox.showerror("Error", "Product code already exists")
                 conn.close()
                 return
             
