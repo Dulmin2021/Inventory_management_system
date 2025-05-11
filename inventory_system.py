@@ -136,14 +136,14 @@ class InventoryManagementSystem:
         )
         ''')
         
-        # Create items table
+        # Create items table with stricter constraints
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            item_code TEXT NOT NULL,
-            product_code TEXT UNIQUE NOT NULL,
-            item_name TEXT NOT NULL,
-            selling_price REAL NOT NULL,
+            item_code TEXT NOT NULL CHECK(length(item_code) > 0),
+            product_code TEXT UNIQUE NOT NULL CHECK(length(product_code) > 0),
+            item_name TEXT NOT NULL CHECK(length(item_name) > 0),
+            selling_price REAL NOT NULL CHECK(selling_price >= 0),
             date_added TEXT NOT NULL
         )
         ''')
@@ -171,6 +171,9 @@ class InventoryManagementSystem:
             cursor.execute("SELECT * FROM items WHERE item_code=?", (item[0],))
             if not cursor.fetchone():
                 cursor.execute("INSERT INTO items (item_code, product_code, item_name, selling_price, date_added) VALUES (?, ?, ?, ?, ?)", item)
+        
+        # Clean up any invalid entries (like those with "✅" or "OK" in price)
+        cursor.execute("UPDATE items SET selling_price = 0 WHERE selling_price NOT LIKE '%.%' AND selling_price NOT GLOB '*[0-9]*'")
         
         conn.commit()
         conn.close()
@@ -288,6 +291,10 @@ class InventoryManagementSystem:
     def login(self):
         username = self.username_var.get()
         password = self.password_var.get()
+        
+        if not username or not password:
+            messagebox.showerror("Error", "Both username and password are required")
+            return
         
         conn = sqlite3.connect('inventory.db')
         cursor = conn.cursor()
@@ -833,20 +840,24 @@ class InventoryManagementSystem:
         
         for item_id in selected_items:
             item_values = tree.item(item_id, "values")
-            item_data = {
-                'item_code': item_values[0],
-                'product_code': item_values[1],
-                'item_name': item_values[2],
-                'selling_price': float(item_values[3]),
-                'quantity': 1  # Default quantity
-            }
-            
-            # Check if item already in receipt
-            existing_item = next((i for i in self.cart_items if i['item_code'] == item_data['item_code']), None)
-            if existing_item:
-                existing_item['quantity'] += 1
-            else:
-                self.cart_items.append(item_data)
+            try:
+                item_data = {
+                    'item_code': item_values[0],
+                    'product_code': item_values[1],
+                    'item_name': item_values[2],
+                    'selling_price': float(item_values[3]),
+                    'quantity': 1  # Default quantity
+                }
+                
+                # Check if item already in receipt
+                existing_item = next((i for i in self.cart_items if i['item_code'] == item_data['item_code']), None)
+                if existing_item:
+                    existing_item['quantity'] += 1
+                else:
+                    self.cart_items.append(item_data)
+            except (ValueError, IndexError):
+                messagebox.showerror("Error", f"Invalid data for item: {item_values}")
+                continue
         
         # Update cart count label
         self.update_cart_count()
@@ -915,7 +926,7 @@ Item Code      Item Name       Qty    Price    Total
         bill_text += f"""
 -----------------------------------------------------
 Subtotal: Rs:{subtotal:.2f}
-Tax (0%): Rs:{tax:.2f}
+Tax (7%): Rs:{tax:.2f}
 -----------------------------------------------------
 TOTAL:    Rs:{total:.2f}
 =====================================================
@@ -988,9 +999,11 @@ TOTAL:    Rs:{total:.2f}
             return
         
         try:
-            float(selling_price)
+            selling_price = float(selling_price)
+            if selling_price < 0:
+                raise ValueError("Price cannot be negative")
         except ValueError:
-            messagebox.showerror("Error", "Selling price must be a number")
+            messagebox.showerror("Error", "Selling price must be a positive number")
             return
         
         try:
@@ -1008,7 +1021,7 @@ TOTAL:    Rs:{total:.2f}
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             cursor.execute(
                 "INSERT INTO items (item_code, product_code, item_name, selling_price, date_added) VALUES (?, ?, ?, ?, ?)",
-                (item_code, product_code, item_name, float(selling_price), current_date)
+                (item_code, product_code, item_name, selling_price, current_date)
             )
             conn.commit()
             conn.close()
@@ -1021,7 +1034,7 @@ TOTAL:    Rs:{total:.2f}
             
             messagebox.showinfo("Success", "Item added successfully")
             
-        except Exception as e:
+        except sqlite3.Error as e:
             messagebox.showerror("Database Error", f"Error: {str(e)}")
     
     def delete_item(self):
@@ -1069,9 +1082,11 @@ TOTAL:    Rs:{total:.2f}
             return
         
         try:
-            float(selling_price)
+            selling_price = float(selling_price)
+            if selling_price < 0:
+                raise ValueError("Price cannot be negative")
         except ValueError:
-            messagebox.showerror("Error", "Selling price must be a number")
+            messagebox.showerror("Error", "Selling price must be a positive number")
             return
         
         try:
@@ -1081,7 +1096,7 @@ TOTAL:    Rs:{total:.2f}
             # Update item
             cursor.execute(
                 "UPDATE items SET product_code=?, item_name=?, selling_price=? WHERE item_code=?",
-                (product_code, item_name, float(selling_price), item_code)
+                (product_code, item_name, selling_price, item_code)
             )
             conn.commit()
             conn.close()
@@ -1094,7 +1109,7 @@ TOTAL:    Rs:{total:.2f}
             
             messagebox.showinfo("Success", "Item updated successfully")
             
-        except Exception as e:
+        except sqlite3.Error as e:
             messagebox.showerror("Database Error", f"Error: {str(e)}")
     
     def clear_fields(self):
