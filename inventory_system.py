@@ -136,7 +136,7 @@ class InventoryManagementSystem:
         )
         ''')
         
-        # Create items table with stricter constraints
+        # Create items table with product_code as unique only (removed UNIQUE constraint from item_code)
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -156,24 +156,25 @@ class InventoryManagementSystem:
         
         # Insert sample items if they don't exist
         sample_items = [
-            ('100100008', 'S2001', '2 FOLD BLACK', 930.00, '2025-05-04 10:34:01'),
-            ('100100009', 'S2002', '2FOLD PRINTED', 950.00, '2025-05-04 10:34:01'),
-            ('100100010', 'S2003', '2FOLD SATIN', 1050.00, '2025-05-04 10:34:01'),
-            ('100100015', 'S2004', '2FOLD BLACK UV', 1240.00, '2025-05-04 10:34:01'),
-            ('100100012', 'S2005', '2FOLD PLAIN COLOUR WITH PRINT', 1210.00, '2025-05-04 10:34:01'),
-            ('100100013', 'S2006', '2FOLD PLAIN BORDER DESIGN', 1250.00, '2025-05-04 10:34:01'),
-            ('100100011', 'S2008', '2FOLD PRINTED UV', 1260.00, '2025-05-04 10:34:01'),
-            ('100100090', 'S2009', '2FOLD PRINTED FRIELD UMBRELLA', 1130.00, '2025-05-04 10:34:01'),
-            ('100100091', 'S2010', '2FOLD BLACK HALF MOON', 1120.00, '2025-05-04 10:34:01'),
+            ('100100091', '$2010', '2FOLD BLACK HALF MOON', 950.0, '2025-05-07 17:54:30'),
+            ('100200002', '$2050', '3 FOLD BLACK', 1145.0, '2025-05-07 17:54:30'),
+            ('100200003', '$2051', '3 FOLD PRINTED', 1150.0, '2025-05-07 17:54:30'),
+            ('100200004', '$2052', '3 FOLD SATIN', 1150.0, '2025-05-07 17:54:30'),
+            ('100200005', '$2053', '3 FOLD BLACK UV', 1245.0, '2025-05-07 17:56:33'),
+            ('100400009', '$2135', '27*16 GOLD METAL FRAME MANUAL OPEN BLACK', 1750.0, '2025-05-07 17:54:30'),
+            ('100400010', '$2104', '24*16 GOLD METAL FRAME MANUAL OPEN BLACK', 1570.0, '2025-05-07 17:54:30'),
+            ('100400011', '$2105', '24*16 GOLD METAL FRAME MANUAL OPEN MULTI', 1590.0, '2025-05-07 17:54:30'),
+            ('100400012', '$2106', '24*16 GOLD METAL FRAME MANUAL OPEN SILVER', 1720.0, '2025-05-07 17:54:30'),
+            ('100400163', '$2107', '24*16 MANUAL OPEN TELESCOPE (MULTI)', 1990.0, '2025-05-07 17:54:30')
         ]
         
         for item in sample_items:
-            cursor.execute("SELECT * FROM items WHERE item_code=?", (item[0],))
-            if not cursor.fetchone():
-                cursor.execute("INSERT INTO items (item_code, product_code, item_name, selling_price, date_added) VALUES (?, ?, ?, ?, ?)", item)
-        
-        # Clean up any invalid entries (like those with "✅" or "OK" in price)
-        cursor.execute("UPDATE items SET selling_price = 0 WHERE selling_price NOT LIKE '%.%' AND selling_price NOT GLOB '*[0-9]*'")
+            try:
+                cursor.execute("SELECT * FROM items WHERE product_code=?", (item[1],))
+                if not cursor.fetchone():
+                    cursor.execute("INSERT INTO items (item_code, product_code, item_name, selling_price, date_added) VALUES (?, ?, ?, ?, ?)", item)
+            except sqlite3.IntegrityError:
+                continue  # Skip if item already exists
         
         conn.commit()
         conn.close()
@@ -227,10 +228,10 @@ class InventoryManagementSystem:
         logo_icon.pack(side="left", padx=10)
         
         # Title text
-        title_text = tk.Label(logo_frame, bg="white", fg="#0047B3")
+        title_text = tk.Label(logo_frame, text="CIB Inventory System", font=("Arial", 20, "bold"), bg="white", fg="#0047B3")
         title_text.pack(side="left")
         
-        subtitle = tk.Label(login_container, text="CIB Inventory Management System", 
+        subtitle = tk.Label(login_container, text="Inventory Management System", 
                            font=("Arial", 12), bg="white", fg="#666")
         subtitle.pack(pady=(0, 30))
         
@@ -614,7 +615,7 @@ class InventoryManagementSystem:
         print_btn.pack(pady=10)
         
         # Load all items initially
-        self.load_item_tree()
+        self.load_item_tree()   
     
     def create_sidebar(self, parent_frame):
         """Create the sidebar with navigation buttons"""
@@ -988,10 +989,10 @@ TOTAL:    Rs:{total:.2f}
             self.update_cart_count()
     
     def add_item(self):
-        item_code = self.item_code_var.get()
-        product_code = self.product_code_var.get()
-        item_name = self.item_name_var.get()
-        selling_price = self.selling_price_var.get()
+        item_code = self.item_code_var.get().strip()
+        product_code = self.product_code_var.get().strip()
+        item_name = self.item_name_var.get().strip()
+        selling_price = self.selling_price_var.get().strip()
         
         # Validate input
         if not (item_code and product_code and item_name and selling_price):
@@ -1010,7 +1011,9 @@ TOTAL:    Rs:{total:.2f}
             conn = sqlite3.connect('inventory.db')
             cursor = conn.cursor()
             
-            # Check if item code already exists
+            
+                
+            # Check if product code already exists
             cursor.execute("SELECT * FROM items WHERE product_code=?", (product_code,))
             if cursor.fetchone():
                 messagebox.showerror("Error", "Product code already exists")
@@ -1071,10 +1074,10 @@ TOTAL:    Rs:{total:.2f}
             messagebox.showerror("Error", "No item selected")
             return
         
-        item_code = self.item_code_var.get()
-        product_code = self.product_code_var.get()
-        item_name = self.item_name_var.get()
-        selling_price = self.selling_price_var.get()
+        item_code = self.item_code_var.get().strip()
+        product_code = self.product_code_var.get().strip()
+        item_name = self.item_name_var.get().strip()
+        selling_price = self.selling_price_var.get().strip()
         
         # Validate input
         if not (item_code and product_code and item_name and selling_price):
@@ -1092,6 +1095,17 @@ TOTAL:    Rs:{total:.2f}
         try:
             conn = sqlite3.connect('inventory.db')
             cursor = conn.cursor()
+            
+            # Check if product code is being changed to one that already exists
+            cursor.execute("SELECT product_code FROM items WHERE item_code=?", (item_code,))
+            current_product_code = cursor.fetchone()[0]
+            
+            if product_code != current_product_code:
+                cursor.execute("SELECT * FROM items WHERE product_code=?", (product_code,))
+                if cursor.fetchone():
+                    messagebox.showerror("Error", "Product code already exists")
+                    conn.close()
+                    return
             
             # Update item
             cursor.execute(
